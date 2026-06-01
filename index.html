@@ -34,7 +34,7 @@
             border-right: 1px solid #cccccc;
         }
 
-        /* Barra de Abas (Tabs) estilo VS Code */
+        /* Barra de Abas (Tabs) / Ferramentas estilo VS Code */
         .tabs-bar {
             background-color: #ececec;
             display: flex;
@@ -43,6 +43,16 @@
             height: 35px;
             border-bottom: 1px solid #cccccc;
             padding-right: 10px;
+        }
+
+        .left-side, .right-side {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+
+        .right-side {
+            gap: 8px; /* Espaçamento entre os botões */
         }
 
         /* Aba ativa */
@@ -60,9 +70,23 @@
             user-select: none;
         }
 
-        /* Botão de Salvar / Baixar */
-        .btn-save {
-            background-color: #007acc;
+        /* Campo de Input para o nome do arquivo */
+        .file-name-input {
+            border: 1px solid #cccccc;
+            padding: 3px 6px;
+            font-size: 12px;
+            border-radius: 3px;
+            outline: none;
+            width: 120px;
+            background-color: #ffffff;
+        }
+        
+        .file-name-input:focus {
+            border-color: #007acc;
+        }
+
+        /* Estilo base dos botões */
+        .btn {
             color: white;
             border: none;
             padding: 4px 10px;
@@ -76,13 +100,19 @@
             transition: background 0.2s;
         }
 
-        .btn-save:hover {
-            background-color: #0062a3;
+        /* Botão de Salvar (Azul) */
+        .btn-save {
+            background-color: #007acc;
         }
+        .btn-save:hover { background-color: #0062a3; }
+        .btn-save:active { background-color: #004c80; }
 
-        .btn-save:active {
-            background-color: #004c80;
+        /* Botão de Limpar (Vermelho) */
+        .btn-clear {
+            background-color: #d9534f;
         }
+        .btn-clear:hover { background-color: #c9302c; }
+        .btn-clear:active { background-color: #ac2925; }
 
         /* Área de edição (Textarea) */
         textarea {
@@ -110,15 +140,21 @@
         /* Responsividade para Celulares */
         @media (max-width: 768px) {
             body {
-                flex-direction: column; /* Empilha os painéis verticalmente */
+                flex-direction: column;
             }
             .pane {
                 width: 100%;
-                height: 50%; /* Metade da tela para o editor, metade para o preview */
+                height: 50%;
             }
             .editor-pane {
                 border-right: none;
                 border-bottom: 2px solid #cccccc;
+            }
+            .file-name-input {
+                width: 90px; /* Reduz um pouco no celular para caber tudo */
+            }
+            .tabs-bar {
+                padding-right: 5px;
             }
         }
     </style>
@@ -127,12 +163,21 @@
 
     <div class="pane editor-pane">
         <div class="tabs-bar">
-            <div class="tab">
-                <span style="color: #e44d26; font-weight: bold; margin-right: 6px;">&lt;&gt;</span> index.html
+            <div class="left-side">
+                <div class="tab">
+                    <span style="color: #e44d26; font-weight: bold; margin-right: 6px;">&lt;&gt;</span> Editor
+                </div>
             </div>
-            <button class="btn-save" id="downloadBtn">
-                📥 Salvar .html
-            </button>
+            
+            <div class="right-side">
+                <input type="text" id="fileName" class="file-name-input" placeholder="Nome do arquivo..." value="index.html">
+                <button class="btn btn-clear" id="clearBtn" title="Limpar todo o código">
+                    🗑️ Limpar
+                </button>
+                <button class="btn btn-save" id="downloadBtn">
+                    📥 Salvar
+                </button>
+            </div>
         </div>
         <textarea id="htmlCode" placeholder="Cole ou digite seu código HTML aqui..."><h1 style='color: #007acc; font-family: sans-serif;'>Olá, Mundo!</h1>
 <p style='font-family: sans-serif; color: #333;'>Este é um editor estilo VS Code Claro.</p></textarea>
@@ -151,42 +196,48 @@
         const htmlCode = document.getElementById('htmlCode');
         const outputFrame = document.getElementById('outputFrame');
         const downloadBtn = document.getElementById('downloadBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const fileNameInput = document.getElementById('fileName');
 
-        // Atualiza o preview
+        // Atualiza o preview do Iframe
         function updateOutput() {
             const baseStyle = "<style>body { margin: 15px; font-family: sans-serif; }</style>";
             outputFrame.srcdoc = baseStyle + htmlCode.value;
         }
 
-        // Função para baixar o arquivo criado pelo usuário
+        // Função para baixar o arquivo HTML com nome personalizado
         function downloadHTML() {
             const codeToSave = htmlCode.value;
-            
-            // Cria um "Blob" (um objeto de dados binários/texto bruto) do tipo HTML
             const blob = new Blob([codeToSave], { type: 'text/html' });
-            
-            // Cria um link temporário na memória
             const link = document.createElement('a');
             
-            // Define o nome padrão do arquivo baixado
-            link.download = 'index.html';
-            
-            // Aponta o link para o objeto de dados que criamos
+            // Pega o valor digitado pelo usuário e valida a extensão
+            let name = fileNameInput.value.trim();
+            if (!name) name = 'index.html';
+            if (!name.endsWith('.html')) name += '.html'; // Garante que termine com .html
+
+            link.download = name;
             link.href = window.URL.createObjectURL(blob);
-            
-            // Garante que o link não apareça na tela
             link.style.display = 'none';
             
-            // Adiciona o link no documento, simula o clique para baixar e remove o link
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
-        // Evento do botão de download
-        downloadBtn.addEventListener('click', downloadHTML);
+        // Função para limpar a tela
+        function clearScreen() {
+            if (confirm("Tem certeza que deseja limpar todo o código?")) {
+                htmlCode.value = "";
+                updateOutput();
+            }
+        }
 
-        // Suporte para a tecla Tab criar recuo de código
+        // Eventos
+        downloadBtn.addEventListener('click', downloadHTML);
+        clearBtn.addEventListener('click', clearScreen);
+
+        // Suporte para a tecla Tab criar recuo de código (2 espaços)
         htmlCode.addEventListener('keydown', function(e) {
             if (e.key === 'Tab') {
                 e.preventDefault();
