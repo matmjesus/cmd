@@ -18,7 +18,7 @@
             height: 100vh;
             width: 100vw;
             overflow: hidden;
-            background-color: #f3f3f3; /* Cor de fundo padrão da janela do VS Code */
+            background-color: #f3f3f3;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
@@ -31,18 +31,21 @@
         }
 
         .editor-pane {
-            border-right: 1px solid #cccccc; /* Divisória clara */
+            border-right: 1px solid #cccccc;
         }
 
         /* Barra de Abas (Tabs) estilo VS Code */
         .tabs-bar {
             background-color: #ececec;
             display: flex;
+            justify-content: space-between;
+            align-items: center;
             height: 35px;
             border-bottom: 1px solid #cccccc;
+            padding-right: 10px;
         }
 
-        /* Aba ativa (Estilo VS Code com a linhazinha azul em cima) */
+        /* Aba ativa */
         .tab {
             background-color: #ffffff;
             color: #333333;
@@ -50,18 +53,42 @@
             font-size: 13px;
             display: flex;
             align-items: center;
-            border-top: 1px solid #007acc; /* Detalhe azul do VS Code */
+            border-top: 1px solid #007acc;
             border-right: 1px solid #cccccc;
+            height: 100%;
             cursor: default;
             user-select: none;
         }
 
+        /* Botão de Salvar / Baixar */
+        .btn-save {
+            background-color: #007acc;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+        }
+
+        .btn-save:hover {
+            background-color: #0062a3;
+        }
+
+        .btn-save:active {
+            background-color: #004c80;
+        }
+
         /* Área de edição (Textarea) */
         textarea {
-            flex-grow: 1; /* Ocupa o restante do espaço da coluna */
+            flex-grow: 1;
             width: 100%;
             padding: 15px;
-            /* Fonte padrão do VS Code */
             font-family: Consolas, "Courier New", monospace; 
             font-size: 14px;
             line-height: 1.5;
@@ -79,6 +106,21 @@
             background-color: #ffffff;
             border: none;
         }
+
+        /* Responsividade para Celulares */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column; /* Empilha os painéis verticalmente */
+            }
+            .pane {
+                width: 100%;
+                height: 50%; /* Metade da tela para o editor, metade para o preview */
+            }
+            .editor-pane {
+                border-right: none;
+                border-bottom: 2px solid #cccccc;
+            }
+        }
     </style>
 </head>
 <body>
@@ -88,11 +130,12 @@
             <div class="tab">
                 <span style="color: #e44d26; font-weight: bold; margin-right: 6px;">&lt;&gt;</span> index.html
             </div>
+            <button class="btn-save" id="downloadBtn">
+                📥 Salvar .html
+            </button>
         </div>
-        <textarea id="htmlCode" placeholder="Cole ou digite seu código HTML aqui...
-Exemplo:
-<h1 style='color: #007acc;'>Olá, Mundo!</h1>
-<p>Este é um editor estilo VS Code Claro.</p>"></textarea>
+        <textarea id="htmlCode" placeholder="Cole ou digite seu código HTML aqui..."><h1 style='color: #007acc; font-family: sans-serif;'>Olá, Mundo!</h1>
+<p style='font-family: sans-serif; color: #333;'>Este é um editor estilo VS Code Claro.</p></textarea>
     </div>
 
     <div class="pane output-pane">
@@ -107,16 +150,59 @@ Exemplo:
     <script>
         const htmlCode = document.getElementById('htmlCode');
         const outputFrame = document.getElementById('outputFrame');
+        const downloadBtn = document.getElementById('downloadBtn');
 
+        // Atualiza o preview
         function updateOutput() {
-            outputFrame.srcdoc = htmlCode.value;
+            const baseStyle = "<style>body { margin: 15px; font-family: sans-serif; }</style>";
+            outputFrame.srcdoc = baseStyle + htmlCode.value;
         }
+
+        // Função para baixar o arquivo criado pelo usuário
+        function downloadHTML() {
+            const codeToSave = htmlCode.value;
+            
+            // Cria um "Blob" (um objeto de dados binários/texto bruto) do tipo HTML
+            const blob = new Blob([codeToSave], { type: 'text/html' });
+            
+            // Cria um link temporário na memória
+            const link = document.createElement('a');
+            
+            // Define o nome padrão do arquivo baixado
+            link.download = 'index.html';
+            
+            // Aponta o link para o objeto de dados que criamos
+            link.href = window.URL.createObjectURL(blob);
+            
+            // Garante que o link não apareça na tela
+            link.style.display = 'none';
+            
+            // Adiciona o link no documento, simula o clique para baixar e remove o link
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Evento do botão de download
+        downloadBtn.addEventListener('click', downloadHTML);
+
+        // Suporte para a tecla Tab criar recuo de código
+        htmlCode.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+
+                this.value = this.value.substring(0, start) + "  " + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 2;
+                updateOutput();
+            }
+        });
 
         // Atualiza conforme digita
         htmlCode.addEventListener('input', updateOutput);
         
-        // Carrega o conteúdo inicial do placeholder se o usuário não tiver digitado nada
-        // (Opcional, mas dá um efeito legal)
+        // Renderização inicial
         updateOutput(); 
     </script>
 
